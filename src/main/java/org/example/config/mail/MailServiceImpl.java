@@ -2,9 +2,9 @@ package org.example.config.mail;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.example.data.model.enums.Status;
-import org.example.dto.EmailNotificationRequest;
+import org.example.dto.request.EmailNotificationRequest;
 import org.example.general.ApiResponse;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -13,11 +13,12 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.example.config.app.Message.EMAIL_FAILED;
-import static org.example.config.app.Message.EMAIL_SENT;
+import static org.example.general.Message.EMAIL_FAILED;
+import static org.example.general.Message.EMAIL_SENT;
+
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class MailServiceImpl implements MailService{
 
     private final MailConfiguration mailConfiguration;

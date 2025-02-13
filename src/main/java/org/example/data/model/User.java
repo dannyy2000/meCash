@@ -2,21 +2,22 @@ package org.example.data.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import org.example.config.validator.EmailValidatorObj;
+import org.example.config.validator.NameValidatorObject;
+import org.example.data.model.enums.AccountType;
+import org.example.data.model.enums.Gender;
 import org.example.data.model.enums.Role;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
+@Builder
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Setter
-@Getter
 public class User {
     @Id
     @Column(name = "id", nullable = false)
@@ -26,13 +27,21 @@ public class User {
     private String lastName;
     @Column(unique = true)
     private String email;
-    private BigDecimal balance;
     @Enumerated(EnumType.STRING)
     private Gender gender;
     private Role role;
-    @Size(min = 8)
     private String password;
     private LocalDateTime createdAt;
     private boolean isEnabled;
+    @Enumerated(EnumType.STRING)
+    private AccountType accountType;
+    private String AccountNumber;
+
+
+    public void validateUser(){
+        EmailValidatorObj.validateEmail(email);
+        NameValidatorObject.validateName(firstName);
+        NameValidatorObject.validateName(lastName);
+    }
 
 }

@@ -1,4 +1,4 @@
-package org.example.data.model;
+package org.example.data.model.enums;
 
 public enum Gender {
     MALE,
