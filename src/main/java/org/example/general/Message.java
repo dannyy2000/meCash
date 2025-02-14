@@ -35,6 +35,8 @@ public class Message {
 
     public static final String AUTH_OTP_USED = "Otp has already been used";
     public static final String OTP_VERIFIED = "Otp verified";
+    public static final String DEPOSIT_SUCCESSFUL = "Deposit successful" ;
+    public static final String WITHDRAWAL_SUCCESSFUL = "Withdrawal successful";
 
 
 }

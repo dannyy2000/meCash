@@ -51,7 +51,7 @@ public class SecurityConfig {
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.requestMatchers("").permitAll()
-                        .requestMatchers("/auth/**")
+                        .requestMatchers("/auth/**","/wallet/**")
                         .permitAll()
                         .requestMatchers("").permitAll()
                         .anyRequest().authenticated());

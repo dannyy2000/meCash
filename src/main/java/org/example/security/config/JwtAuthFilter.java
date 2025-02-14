@@ -27,38 +27,62 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(@NotNull HttpServletRequest request,@NotNull HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        try{
-            if(request.getHeader("Authorization") == null){
-                filterChain.doFilter(request,response);
-                return;
-            }
-            String jwt = getJwtFromRequest(request);
-            String username = jwtProvider.getUserNameFromJwtToken(jwt);
+//        try{
+//            if(request.getHeader("Authorization") == null){
+//                filterChain.doFilter(request,response);
+//                return;
+//            }
+//            String jwt = getJwtFromRequest(request);
+//            String username = jwtProvider.getUserNameFromJwtToken(jwt);
+//
+//            if(username != null){
+//                UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
+//
+//                if(jwtProvider.isTokenValid(jwt,userDetails)){
+//                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails,null,userDetails.getAuthorities());
+//                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+//                    SecurityContextHolder.getContext().setAuthentication(authentication);
+//                }
+//            }
+//            filterChain.doFilter(request,response);
+//        }catch (Exception e){
+//            if(!response.isCommitted()){
+//                response.sendError(400,String.valueOf(HttpServletResponse.SC_BAD_REQUEST));
+//            }
+//            filterChain.doFilter(request,response);
+//        }
+//    }
+//
+//    private String getJwtFromRequest(HttpServletRequest request) throws IllegalAccessException {
+//        String token = request.getHeader("Authorization");
+//        if(StringUtils.hasText(token) && token.startsWith("Bearer ")){
+//            return token.substring(7);
+//        }
+//        throw new IllegalAccessException("Token is empty");
+//    }
+        String token = getTokenFromRequest(request);
+        if (token != null && jwtProvider.isTokenValid(token)) {  // ✅ Validate token
+            String email = jwtProvider.getUserNameFromJwtToken(token); // ✅ Extract user email
 
-            if(username != null){
-                UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
+            UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
+            log.info("i.....{}",userDetails.getUsername());
 
-                if(jwtProvider.isTokenValid(jwt,userDetails)){
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails,null,userDetails.getAuthorities());
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                }
-            }
-            filterChain.doFilter(request,response);
-        }catch (Exception e){
-            if(!response.isCommitted()){
-                response.sendError(400,String.valueOf(HttpServletResponse.SC_BAD_REQUEST));
-            }
-            filterChain.doFilter(request,response);
+
+            UsernamePasswordAuthenticationToken authToken =
+                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+            SecurityContextHolder.getContext().setAuthentication(authToken);  // ✅ Set authentication context
         }
+        filterChain.doFilter(request, response);
     }
 
-    private String getJwtFromRequest(HttpServletRequest request) throws IllegalAccessException {
-        String token = request.getHeader("Authorization");
-        if(StringUtils.hasText(token) && token.startsWith("Bearer ")){
-            return token.substring(7);
+    private String getTokenFromRequest(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7); // Remove "Bearer " prefix
         }
-        throw new IllegalAccessException("Token is empty");
+        return null;
     }
 }
+
 

@@ -72,9 +72,6 @@ public class AuthOtpServiceImpl implements AuthOtpService {
                     throw new OtpValidationException(AUTH_OTP_USED);
                 }
 
-                otp.setUsed(true);
-                authOtpRepository.save(otp);
-
                 return new VerifyOtpResponseDto(
                         OTP_VERIFIED,
                         Status.SUCCESS,

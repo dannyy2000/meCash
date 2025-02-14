@@ -8,7 +8,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@AllArgsConstructor
 public class VerifyUserRequest {
 
     @NotNull(message = "field name cannot be null")

@@ -23,7 +23,6 @@ public class AuthController extends Controller{
     }
 
     @PostMapping("/createAccount")
-
     public ApiResponse<?> createAccount(@Valid @RequestBody SignUpRequest signUpRequest){
         return responseWithUpdatedHttpStatus(auth.createAccount(signUpRequest));
     }

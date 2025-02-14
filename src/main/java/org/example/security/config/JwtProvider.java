@@ -37,8 +37,14 @@ public class JwtProvider {
 
     public String generateJwt(Authentication authentication){
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userPrincipal.getId());  // ✅ Add user ID
+        claims.put("roles", userPrincipal.getAuthorities().toString()); //
+        log.info("Generating JWT for user: {}, Claims: {}", userPrincipal.getEmail(), claims); // ✅ Debug log
+
         return Jwts.builder()
                 .subject(userPrincipal.getEmail())
+                .claims(claims)  // ✅ Use userPrincipal
                 .issuedAt(new Date())
                 .expiration(Date.from(Instant.now().plusMillis(jwtExpiration)))
                 .signWith(getSigningKey())
@@ -61,19 +67,21 @@ public class JwtProvider {
         return extractClaims(token,Claims::getSubject);
     }
 
-    public String generateToken(Map<String,Object> extractClaims, User user){
-        log.info("This is the key{}",getSigningKey());
-        return Jwts.builder()
-                .claims(extractClaims)
-                .subject(user.getEmail())
-                .issuedAt(Date.from(Instant.now()))
-                .expiration(Date.from(Instant.now().plusSeconds(jwtExpiration)))
-                .signWith(getSigningKey()).compact();
-    }
-
-    public String generateToken(User user){
-        return generateToken(new HashMap<>(),user);
-    }
+//    public String generateToken(Map<String,Object> extractClaims, User user){
+//        log.info("This is the key{}",getSigningKey());
+//        return Jwts.builder()
+//                .claims(extractClaims)
+//                .claim("userId", user.getId())  // ✅ Use userPrincipal
+//                .claim("roles", user.getRole())
+//                .subject(user.getEmail())
+//                .issuedAt(Date.from(Instant.now()))
+//                .expiration(Date.from(Instant.now().plusSeconds(jwtExpiration)))
+//                .signWith(getSigningKey()).compact();
+//    }
+//
+//    public String generateToken(User user){
+//        return generateToken(new HashMap<>(),user);
+//    }
 
     public boolean isTokenValid(String token, UserDetails userDetails){
         final String username = getUserNameFromJwtToken(token);
@@ -99,4 +107,9 @@ public class JwtProvider {
             return e.getClaims();
         }
     }
+
+    public Long extractUserId(String token) {
+        return extractClaims(token, claims -> claims.get("userId", Long.class));
+    }
+
 }

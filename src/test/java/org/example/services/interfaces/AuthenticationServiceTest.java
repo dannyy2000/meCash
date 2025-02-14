@@ -1,33 +1,34 @@
 package org.example.services.interfaces;
 
 import lombok.extern.slf4j.Slf4j;
-import org.example.data.model.RefreshToken;
+import org.example.data.model.AuthOtp;
 import org.example.data.model.User;
+import org.example.data.model.Wallet;
 import org.example.data.model.enums.AccountType;
 import org.example.data.model.enums.Status;
+import org.example.data.repositories.AuthOtpRepository;
 import org.example.data.repositories.UserRepository;
+import org.example.data.repositories.WalletRepository;
 import org.example.dto.request.LoginRequest;
 import org.example.dto.request.SignUpRequest;
+import org.example.dto.request.VerifyUserRequest;
 import org.example.dto.response.GenerateOtpResponse;
-import org.example.dto.response.LoginResponseDto;
 import org.example.general.ApiResponse;
 import org.example.general.ErrorMessages;
 import org.example.mapper.UserMapper;
-import org.example.security.config.JwtProvider;
-import org.example.security.config.UserPrincipal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.example.general.ErrorMessages.*;
+import static org.example.general.Message.EMAIL_VERIFIED;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -39,6 +40,12 @@ public class AuthenticationServiceTest {
     @MockBean
     private UserRepository appUserRepository;
 
+    @MockBean
+    private WalletRepository walletRepository;
+
+    @MockBean
+    private AuthOtpRepository authOtpRepository;
+
     @Mock
     private PasswordEncoder passwordEncoder;
 
@@ -49,19 +56,11 @@ public class AuthenticationServiceTest {
     private AuthOtpService authOtpService;
 
     @Mock
-    private AuthenticationManager authenticationManager;
-
-    @Mock
-    private RefreshTokenService refreshTokenService;
-
-    @Mock
-    private JwtProvider jwtProvider;
-
-    @Mock
     private UserMapper userMapper;
 
     private SignUpRequest signUpRequest;
     private LoginRequest loginRequest;
+    private VerifyUserRequest verifyUserRequest;
 
 
     @BeforeEach
@@ -77,6 +76,10 @@ public class AuthenticationServiceTest {
         loginRequest.setEmail("test@example.com");
         loginRequest.setPassword("password123");
 
+        verifyUserRequest = new VerifyUserRequest();
+        verifyUserRequest.setEmail("test@example.com");
+        verifyUserRequest.setOtp("234567");
+
     }
 
     @Test
@@ -87,7 +90,7 @@ public class AuthenticationServiceTest {
                 .accountType(signUpRequest.getAccountType())
                 .firstName(signUpRequest.getFirstName())
                 .lastName(signUpRequest.getLastName())
-                .AccountNumber("1234678900")
+                .accountNumber("1234678900")
                 .build();
         when(appUserRepository.findUserByEmail(signUpRequest.getEmail())).thenReturn(Optional.empty());
         when(userMapper.signUpRequestToUser(signUpRequest)).thenReturn(user);
@@ -109,7 +112,7 @@ public class AuthenticationServiceTest {
                 .accountType(signUpRequest.getAccountType())
                 .firstName(signUpRequest.getFirstName())
                 .lastName(signUpRequest.getLastName())
-                .AccountNumber("1234678900")
+                .accountNumber("1234678900")
                 .build();
         when(appUserRepository.findUserByEmail(signUpRequest.getEmail())).thenReturn(Optional.of(user));
 
@@ -131,7 +134,7 @@ public class AuthenticationServiceTest {
                 .accountType(signUpRequest.getAccountType())
                 .firstName(signUpRequest.getFirstName())
                 .lastName(signUpRequest.getLastName())
-                .AccountNumber("1234678900")
+                .accountNumber("1234678900")
                 .build();
 
 
@@ -155,7 +158,7 @@ public class AuthenticationServiceTest {
                 .accountType(signUpRequest.getAccountType())
                 .firstName(signUpRequest.getFirstName())
                 .lastName(signUpRequest.getLastName())
-                .AccountNumber("1234678900")
+                .accountNumber("1234678900")
                 .build();
 
 
@@ -179,7 +182,7 @@ public class AuthenticationServiceTest {
                 .accountType(signUpRequest.getAccountType())
                 .firstName(signUpRequest.getFirstName())
                 .lastName(signUpRequest.getLastName())
-                .AccountNumber("1234678900")
+                .accountNumber("1234678900")
                 .build();
 
 
@@ -203,7 +206,7 @@ public class AuthenticationServiceTest {
                 .accountType(signUpRequest.getAccountType())
                 .firstName(signUpRequest.getFirstName())
                 .lastName(signUpRequest.getLastName())
-                .AccountNumber("1234678900")
+                .accountNumber("1234678900")
                 .build();
 
 
@@ -227,7 +230,7 @@ public class AuthenticationServiceTest {
                 .accountType(signUpRequest.getAccountType())
                 .firstName(signUpRequest.getFirstName())
                 .lastName(signUpRequest.getLastName())
-                .AccountNumber("1234678900")
+                .accountNumber("1234678900")
                 .build();
 
 
@@ -252,7 +255,7 @@ public class AuthenticationServiceTest {
                 .accountType(signUpRequest.getAccountType())
                 .firstName(signUpRequest.getFirstName())
                 .lastName(signUpRequest.getLastName())
-                .AccountNumber("1234678900")
+                .accountNumber("1234678900")
                 .build();
 
 
@@ -267,51 +270,117 @@ public class AuthenticationServiceTest {
         verify(appUserRepository, never()).save(any());
     }
 
-//    @Test
-//    void testLogin_Success() {
-//        // Use a valid encoded password
-//        String encodedPassword = "$2a$10$7Qm9HfX7iJ8V2FqY8WKPFOqbsZ/jN6cfp8xjHlhgMbvIcPr.T6Pa2"; // Example valid bcrypt hash
-//
-//        // Mock user repository to return the user with a hashed password
-//        User user = User.builder()
-//                .email(loginRequest.getEmail())
-//                .password(encodedPassword) // ✅ Store encoded password
-//                .isEnabled(true)
-//                .build();
-//        when(appUserRepository.save(any())).thenReturn(user);
-//        when(appUserRepository.findUserByEmail(loginRequest.getEmail())).thenReturn(Optional.of(user));
-//
-//        // ✅ Ensure password matches properly
-//        when(passwordEncoder.matches(loginRequest.getPassword(), encodedPassword)).thenReturn(true);
-//
-//        // Properly mock the authentication process
-//        Authentication authentication = mock(Authentication.class);
-//        when(authenticationManager.authenticate(any())).thenReturn(authentication);
-//
-//        // Ensure authentication returns a valid UserPrincipal
-//        UserPrincipal userPrincipal = mock(UserPrincipal.class);
-//        when(authentication.getPrincipal()).thenReturn(userPrincipal);
-//        when(userPrincipal.getEmail()).thenReturn(user.getEmail());
-//
-//        // Mock JWT and refresh token generation
-//        when(jwtProvider.generateToken(user)).thenReturn("mocked-jwt-token");
-//
-//        // Execute login
-//        ApiResponse<?> response = authenticationService.login(loginRequest);
-//
-//        // Assertions
-//        assertNotNull(response);
-//        assertEquals(Status.SUCCESS, response.getStatus());
-//        assertInstanceOf(LoginResponseDto.class, response);
-//
-//        LoginResponseDto loginResponse = (LoginResponseDto) response;
-//        assertEquals("mocked-jwt-token", loginResponse.getToken());
-//
-//        // Verify interactions
-//        verify(authenticationManager).authenticate(any());
-//        verify(jwtProvider).generateToken(user);
-//
-//    }
-//
+    @Test
+    void testVerifyUser_Success() {
+        User user = User.builder()
+                .email(verifyUserRequest.getEmail())
+                .isEnabled(false)
+                .build();
+
+        AuthOtp otp = AuthOtp.builder()
+                .otpValue(verifyUserRequest.getOtp())
+                .used(false)
+                .creationTime(LocalDateTime.now())
+                .expiryTime(LocalDateTime.now().plusMinutes(5))
+                .build();
+
+        when(appUserRepository.findUserByEmail(verifyUserRequest.getEmail())).thenReturn(Optional.of(user));
+        when(authOtpRepository.findByOtpValue(verifyUserRequest.getOtp())).thenReturn(Optional.of(otp));
+        when(appUserRepository.save(any())).thenReturn(user);
+        when(walletRepository.save(any())).thenReturn(new Wallet());
+
+        ApiResponse<?> response = authenticationService.verifyUser(verifyUserRequest);
+
+        assertNotNull(response);
+        assertEquals(Status.SUCCESS, response.getStatus());
+        assertEquals(EMAIL_VERIFIED, response.getMessage());
+        assertTrue(user.isEnabled());
+    }
+
+    @Test
+    void testVerifyUser_UserNotFound() {
+        when(appUserRepository.findUserByEmail(verifyUserRequest.getEmail())).thenReturn(Optional.empty());
+
+        ApiResponse<?> response = authenticationService.verifyUser(verifyUserRequest);
+
+        assertNotNull(response);
+        assertEquals(Status.BAD_REQUEST, response.getStatus());
+        assertTrue(response.getMessage().contains(USER_NOT_FOUND));
+    }
+
+    @Test
+    void testVerifyUser_OtpNotFound() {
+        User user = User.builder()
+                .email(verifyUserRequest.getEmail())
+                .isEnabled(false)
+                .build();
+
+        when(appUserRepository.findUserByEmail(verifyUserRequest.getEmail())).thenReturn(Optional.of(user));
+        when(authOtpRepository.findByOtpValue(verifyUserRequest.getOtp())).thenReturn(Optional.empty());
+
+        ApiResponse<?> response = authenticationService.verifyUser(verifyUserRequest);
+
+        assertNotNull(response);
+        assertEquals(Status.BAD_REQUEST, response.getStatus());
+        assertTrue(response.getMessage().contains(INVALID_OTP_OR_USED));
+    }
+
+    @Test
+    void testVerifyUser_OtpAlreadyUsed() {
+        User user = User.builder()
+                .email(verifyUserRequest.getEmail())
+                .isEnabled(false)
+                .build();
+
+        AuthOtp otp = AuthOtp.builder()
+                .otpValue(verifyUserRequest.getOtp())
+                .used(true)
+                .creationTime(LocalDateTime.now().minusMinutes(5))
+                .expiryTime(LocalDateTime.now())
+                .build();
+
+        when(appUserRepository.findUserByEmail(verifyUserRequest.getEmail())).thenReturn(Optional.of(user));
+        when(authOtpRepository.findByOtpValue(verifyUserRequest.getOtp())).thenReturn(Optional.of(otp));
+
+        ApiResponse<?> response = authenticationService.verifyUser(verifyUserRequest);
+
+        assertNotNull(response);
+        assertEquals(Status.BAD_REQUEST, response.getStatus());
+        assertTrue(response.getMessage().contains(INVALID_OTP_OR_USED));
+    }
+    @Test
+    void testLogin_UserNotEnabled() {
+        User user = User.builder()
+                .email(loginRequest.getEmail())
+                .password(passwordEncoder.encode(loginRequest.getPassword()))
+                .isEnabled(false)
+                .build();
+
+        when(appUserRepository.findUserByEmail(loginRequest.getEmail())).thenReturn(Optional.of(user));
+
+        ApiResponse<?> response = authenticationService.login(loginRequest);
+
+        assertNotNull(response);
+        assertEquals(Status.BAD_REQUEST, response.getStatus());
+        assertEquals(USER_NOT_ENABLED, response.getMessage());
+    }
+
+    @Test
+    void testLogin_InvalidPassword() {
+        User user = User.builder()
+                .email(loginRequest.getEmail())
+                .password(passwordEncoder.encode("password123"))
+                .isEnabled(true)
+                .build();
+
+        when(appUserRepository.findUserByEmail(loginRequest.getEmail())).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())).thenReturn(false);
+
+        ApiResponse<?> response = authenticationService.login(loginRequest);
+
+        assertNotNull(response);
+        assertEquals(Status.BAD_REQUEST, response.getStatus());
+        assertEquals(PASSWORD_MISMATCH, response.getMessage());
+    }
 
 }

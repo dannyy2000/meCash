@@ -9,7 +9,8 @@ import java.math.BigDecimal;
 
 @Getter
 @Setter
-public class DepositRequest {
+public class WithdrawalRequest {
+
     @NotNull(message = "field name cannot be null")
     @NotEmpty(message = "field name cannot be empty")
     private BigDecimal amount;

@@ -35,7 +35,8 @@ public class User {
     private boolean isEnabled;
     @Enumerated(EnumType.STRING)
     private AccountType accountType;
-    private String AccountNumber;
+    @Column(unique = true)
+    private String accountNumber;;
 
 
     public void validateUser(){

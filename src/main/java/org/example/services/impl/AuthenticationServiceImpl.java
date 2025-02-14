@@ -3,13 +3,14 @@ package org.example.services.impl;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.config.mail.MailService;
-import org.example.config.validator.EmailValidatorObj;
 import org.example.data.model.AuthOtp;
 import org.example.data.model.User;
+import org.example.data.model.Wallet;
 import org.example.data.model.enums.Role;
 import org.example.data.model.enums.Status;
 import org.example.data.repositories.AuthOtpRepository;
 import org.example.data.repositories.UserRepository;
+import org.example.data.repositories.WalletRepository;
 import org.example.dto.request.EmailNotificationRequest;
 import org.example.dto.request.LoginRequest;
 import org.example.dto.request.SignUpRequest;
@@ -32,11 +33,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.example.general.ErrorMessages.*;
+import static org.example.general.ErrorMessages.USER_NOT_FOUND;
 import static org.example.general.Message.*;
 
 @Service
@@ -45,6 +48,7 @@ import static org.example.general.Message.*;
 public class AuthenticationServiceImpl implements AuthenticationService {
     private final UserRepository appUserRepository;
     private final AuthOtpRepository authOtpRepository;
+    private final WalletRepository walletRepository;
     private final MailService mailService;
     private final PasswordEncoder passwordEncoder;
     private final AuthOtpService authOtpService;
@@ -63,8 +67,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
             User appUser = userMapper.signUpRequestToUser(signUpRequest);
             appUser.validateUser();
-            String accountNumber = generateAccountNumber();
-            appUser.setAccountNumber(accountNumber);
             appUser.setPassword(passwordEncoder.encode(signUpRequest.getPassword()));
             appUser.setCreatedAt(LocalDateTime.now());
             appUser.setRole(Role.USER);
@@ -82,7 +84,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             log.info("Before sending email to: {}", signUpRequest.getEmail());
             mailService.sendMail(emailNotificationRequest);
             log.info("Email sent successfully!");
-
             return ApiResponse.builder()
                     .message("Thanks for signing up. Kindly check your email to activate your account")
                     .status(Status.SUCCESS)
@@ -104,13 +105,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             log.info("This is the user {}",user.get().getEmail());
 
             if (!user.get().isEnabled()) {
-                throw new UserNotEnabledException("User is not enabled");
+                throw new UserNotEnabledException(USER_NOT_ENABLED);
             }
             log.info("i is here.....1");
 
             boolean isPassword = passwordEncoder.matches(loginRequest.getPassword(), user.get().getPassword());
             if (!isPassword) {
-                throw new InvalidPasswordException("Password does not match");
+                throw new InvalidPasswordException(PASSWORD_MISMATCH);
             }
             log.info("i is here.....2");
 
@@ -125,7 +126,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             log.info("this is the user principal{}",userPrincipal.getEmail());
 
 
-            String jwt = jwtProvider.generateToken(user.get());
+            String jwt = jwtProvider.generateJwt(authentication);
             log.info("This is the jwt{}",jwt);
 
             return new LoginResponseDto(LOGIN_SUCCESS,
@@ -149,11 +150,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             Optional<AuthOtp> otpOptional = authOtpRepository.findByOtpValue(verifyUserRequest.getOtp());
 
             if (otpOptional.isEmpty() || otpOptional.get().isExpired() || otpOptional.get().isUsed()) {
-                throw new OtpValidationException("Invalid Otp or Otp has been used");
+                throw new OtpValidationException(INVALID_OTP_OR_USED);
             }
-
+            String accountNumber = generateAccountNumber();
             optionalAppUser.get().setEnabled(true);
-            appUserRepository.save(optionalAppUser.get());
+            optionalAppUser.get().setAccountNumber(accountNumber);
+            User user = appUserRepository.save(optionalAppUser.get());
+
+            Wallet wallet = Wallet.builder()
+                    .user(user)
+                    .balance(BigDecimal.ZERO)
+                    .build();
+            walletRepository.save(wallet);
 
             otpOptional.get().setUsed(true);
             authOtpRepository.save(otpOptional.get());
