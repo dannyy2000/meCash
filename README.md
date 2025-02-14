@@ -45,5 +45,17 @@ Authentication: JWT (JSON Web Tokens)
 
 Version Control: Git
 ```
+Prerequisites
+```
+Before running the application, ensure you have the following installed:
+
+Java Development Kit (JDK): Version 17 or higher.
+
+Maven: For building the project.
+
+MySQL: For the database.
+
+Postman or any API testing tool: For testing the endpoints.
+```
 
 
