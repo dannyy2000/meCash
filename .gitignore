@@ -1,2 +1,4 @@
 src/main/resources/secrets.properties
 C:\Users\danni\IdeaProjects\meCash\src\main\resources\secrets.properties
+"src/main/resources/secrets.properties"
+echo "src/main/resources/secrets.properties" >> .gitignore
