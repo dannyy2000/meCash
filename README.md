@@ -57,5 +57,37 @@ MySQL: For the database.
 
 Postman or any API testing tool: For testing the endpoints.
 ```
+Setup Instructions
+1. Clone the Repository
+
+```
+git clone https://github.com/dannyy2000/meCash.git
+cd meCash
+```
+
+2. Configure the Database
+Install MySQL and create a database named mecash.
+
+Update the database configuration in src/main/resources/application.properties:
+
+```
+spring.datasource.url=jdbc:mysql://localhost:5432/mecash
+spring.datasource.username=your-db-username
+spring.datasource.password=your-db-password
+spring.jpa.hibernate.ddl-auto=update
+```
+3. Build the Application
+Run the following command to build the project:
+
+```
+mvn clean install
+```
+
+4. Run the Application
+Start the application using:
+
+```
+mvn spring-boot:run
+```
 
 
