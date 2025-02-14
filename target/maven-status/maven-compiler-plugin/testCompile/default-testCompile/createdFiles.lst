@@ -1,0 +1,3 @@
+org\example\services\interfaces\AuthenticationServiceTest.class
+org\example\services\interfaces\AuthOtpServiceTest.class
+org\example\services\interfaces\WalletServiceTest.class
